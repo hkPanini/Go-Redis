@@ -11,7 +11,6 @@ import (
 	"syscall"
 )
 
-// 启动 TCP server 的相关配置
 type Config struct {
 	Address string
 }
