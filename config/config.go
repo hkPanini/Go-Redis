@@ -6,6 +6,8 @@ import (
 	"bufio"
 	"go-redis/lib/logger"
 	"io"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -35,6 +37,19 @@ func init() {
 		Bind:       "127.0.0.1",
 		Port:       6379,
 		AppendOnly: false,
+	}
+}
+
+func SetupConfig(configFilename string) {
+	file, err := os.Open(configFilename)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	Properties = parse(file)
+	_, err = filepath.Abs(configFilename)
+	if err != nil {
+		return
 	}
 }
 
