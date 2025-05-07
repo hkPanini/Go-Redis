@@ -6,8 +6,10 @@ import (
 	"bufio"
 	"errors"
 	"go-redis/interface/resp"
+	"go-redis/resp/reply"
 	"io"
 	"strconv"
+	"strings"
 )
 
 // Payload 是解析结果（或错误）的封装容器，用于统一传递解析后的数据或错误信息
@@ -100,4 +102,45 @@ func parseMultiBulkHeader(msg []byte, state *readState) error {
 	} else { // expectedLine < 0
 		return errors.New("protocol error" + string(msg))
 	}
+}
+
+// $4\r\nPING\r\n
+
+func parseBulkHeader(msg []byte, state *readState) error {
+	var err error
+	state.bulkLen, err = strconv.ParseInt(string(msg[1:len(msg)-2]), 10, 64)
+	if err != nil {
+		return errors.New("protocol error" + string(msg))
+	}
+	if state.bulkLen == -1 {
+		return nil
+	} else if state.bulkLen > 0 {
+		state.msgType = msg[0]        // 标识为 $，表示在读数组
+		state.readingMultiLine = true // 表示在读数组，包含有多个指令
+		state.expectedArgsCount = 1
+		state.args = make([][]byte, 0, 1)
+		return nil
+	} else {
+		return errors.New("protocol error" + string(msg))
+	}
+}
+
+// parseSingleLineReply 用于处理 "+OK\r\n" 和 "-err\r\n" 和 ":5\r\n" 这三种单行指令
+
+func parseSingleLineReply(msg []byte) (resp.Reply, error) {
+	str := strings.TrimSuffix(string(msg), "\r\n") // 剪切掉 \r\n
+	var result resp.Reply
+	switch msg[0] {
+	case '+':
+		result = reply.MakeStatusReply(str[1:])
+	case '-':
+		result = reply.MakeErrReply(str[1:])
+	case ':':
+		val, err := strconv.ParseInt(str[1:], 10, 64)
+		if err != nil {
+			return nil, errors.New("protocol error" + string(msg))
+		}
+		result = reply.MakeIntReply(val)
+	}
+	return result, nil
 }
