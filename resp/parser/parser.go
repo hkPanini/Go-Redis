@@ -3,6 +3,8 @@
 package parser
 
 import (
+	"bufio"
+	"errors"
 	"go-redis/interface/resp"
 	"io"
 )
@@ -21,7 +23,7 @@ type readState struct {
 	expectedArgsCount int      // 标识正在读取的指令期待有多少个参数
 	msgType           byte     // 标识消息的类型
 	args              [][]byte // 已解析的传来的具体指令
-	bulkLen           int64    // 传来的字节组（数据块）的长度
+	bulkLen           int64    // 传来的字节组（数据块）的长度，即 $ 符号后面跟着的数字
 }
 
 // 判断解析器是否完成
@@ -44,4 +46,34 @@ func ParseStream(reader io.Reader) <-chan *Payload {
 
 func parse0(reader io.Reader, ch chan<- *Payload) {
 
+}
+
+// readLine 用于读取以 \r\n 结尾的一行指令
+
+func readLine(bufReader *bufio.Reader, state *readState) ([]byte, bool, error) { // bool 为是否发生I/O错误
+	var msg []byte
+	var err error
+
+	// 1. 没有读到 $ 指明指令长度时，直接按 \r\n 切分
+	if state.bulkLen == 0 {
+		msg, err = bufReader.ReadBytes('\n')
+		if err != nil {
+			return nil, true, err
+		}
+		if len(msg) == 0 || msg[len(msg)-2] != '\r' {
+			return nil, false, errors.New("protocol error" + string(msg))
+		}
+		// 2. 读到 $ 时，严格读取相应的字符个数，哪怕遇到 \r\n 也要读入
+	} else {
+		msg = make([]byte, state.bulkLen+2)
+		_, err = io.ReadFull(bufReader, msg)
+		if err != nil {
+			return nil, true, err
+		}
+		if len(msg) == 0 || msg[len(msg)-2] != '\r' || msg[len(msg)-1] != '\n' {
+			return nil, false, errors.New("protocol error" + string(msg))
+		}
+		state.bulkLen = 0
+	}
+	return msg, false, nil
 }
