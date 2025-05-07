@@ -85,7 +85,7 @@ func readLine(bufReader *bufio.Reader, state *readState) ([]byte, bool, error) {
 
 func parseMultiBulkHeader(msg []byte, state *readState) error {
 	var err error
-	var expectedLine uint64 // 存储 * 号后的数字，如 *3\r\n$3\r\nSET\r\n$3key\r\n$5\r\nvalue\r\n 中开头的 3, 即后面包含多少个指令
+	var expectedLine uint64 // 存储 * 号后的数字，如 *3\r\n$3\r\nSET\r\n$3\r\nkey\r\n$5\r\nvalue\r\n 中开头的 3, 即后面包含多少个指令
 	expectedLine, err = strconv.ParseUint(string(msg[1:len(msg)-2]), 10, 32)
 	if err != nil {
 		return errors.New("protocol error" + string(msg))
@@ -143,4 +143,27 @@ func parseSingleLineReply(msg []byte) (resp.Reply, error) {
 		result = reply.MakeIntReply(val)
 	}
 	return result, nil
+}
+
+// readBody 用于提取 PING\r\n 中具体的命令 PING ，$4\r\nPING\r\n 的 $4\r\n已经在之前被去掉
+// 或是处理 $3\r\nSET\r\n$3\r\nkey\r\n$5\r\nvalue\r\n 中的众多命令
+
+func readBody(msg []byte, state *readState) error {
+	line := msg[0 : len(msg)-2] // 去掉末尾的 \r\n
+	var err error
+	// 遇到的第一个字符是 $
+	if line[0] == '$' {
+		state.bulkLen, err = strconv.ParseInt(string(line[1:]), 10, 64)
+		if err != nil {
+			return errors.New("protocol error" + string(msg))
+		}
+		// $0\r\n
+		if state.bulkLen <= 0 {
+			state.args = append(state.args, []byte{})
+			state.bulkLen = 0
+		}
+	} else {
+		state.args = append(state.args, line)
+	}
+	return nil
 }
