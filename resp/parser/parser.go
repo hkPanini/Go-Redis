@@ -7,6 +7,7 @@ import (
 	"errors"
 	"go-redis/interface/resp"
 	"io"
+	"strconv"
 )
 
 // Payload 是解析结果（或错误）的封装容器，用于统一传递解析后的数据或错误信息
@@ -21,7 +22,7 @@ type Payload struct {
 type readState struct {
 	readingMultiLine  bool     // 标识解析器解析的是单行数据还是多行数据
 	expectedArgsCount int      // 标识正在读取的指令期待有多少个参数
-	msgType           byte     // 标识消息的类型
+	msgType           byte     // 标识消息的类型，* 表示在读一个数组（一个数组中有多条指令），$ 表示在读一条指令
 	args              [][]byte // 已解析的传来的具体指令
 	bulkLen           int64    // 传来的字节组（数据块）的长度，即 $ 符号后面跟着的数字
 }
@@ -48,7 +49,7 @@ func parse0(reader io.Reader, ch chan<- *Payload) {
 
 }
 
-// readLine 用于读取以 \r\n 结尾的一行指令
+// readLine 用于读取以 \r\n 结尾的一行指令，只负责读取，不负责任何解析
 
 func readLine(bufReader *bufio.Reader, state *readState) ([]byte, bool, error) { // bool 为是否发生I/O错误
 	var msg []byte
@@ -76,4 +77,27 @@ func readLine(bufReader *bufio.Reader, state *readState) ([]byte, bool, error) {
 		state.bulkLen = 0
 	}
 	return msg, false, nil
+}
+
+// parseMultiBulkHeader 用于解析处理 readLine 中读取到的 "*<number>/r/n"
+
+func parseMultiBulkHeader(msg []byte, state *readState) error {
+	var err error
+	var expectedLine uint64 // 存储 * 号后的数字，如 *3\r\n$3\r\nSET\r\n$3key\r\n$5\r\nvalue\r\n 中开头的 3, 即后面包含多少个指令
+	expectedLine, err = strconv.ParseUint(string(msg[1:len(msg)-2]), 10, 32)
+	if err != nil {
+		return errors.New("protocol error" + string(msg))
+	}
+	if expectedLine == 0 {
+		state.expectedArgsCount = 0
+		return nil
+	} else if expectedLine > 0 {
+		state.msgType = msg[0]        // 标识为 *，表示在读数组
+		state.readingMultiLine = true // 表示在读数组，包含有多个指令
+		state.expectedArgsCount = int(expectedLine)
+		state.args = make([][]byte, 0, expectedLine)
+		return nil
+	} else { // expectedLine < 0
+		return errors.New("protocol error" + string(msg))
+	}
 }
