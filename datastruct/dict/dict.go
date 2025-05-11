@@ -4,7 +4,7 @@ type Consumer func(key string, val interface{}) bool
 
 type Dict interface {
 	Get(key string) (val interface{}, exist bool)
-	Len()
+	Len() int
 	Put(key string, val interface{}) (result int)
 	PutIfAbsent(key string, val interface{}) (result int) // 如果不存在则 put
 	PutIfExists(key string, val interface{}) (result int) // 如果存在则 put
