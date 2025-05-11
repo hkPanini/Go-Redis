@@ -13,5 +13,5 @@ type Dict interface {
 	Keys() []string                        // 列出所有的 key
 	RandomKeys(limit int) []string         // 随机返回 limit 个 key，可能有重复
 	RandomDistinctKeys(limit int) []string // 随机返回 limit 个 key，不会重复
-	clear()                                // 清空字典
+	Clear()                                // 清空字典
 }

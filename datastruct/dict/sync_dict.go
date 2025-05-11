@@ -103,6 +103,6 @@ func (dict *SyncDict) RandomDistinctKeys(limit int) []string {
 	return result
 }
 
-func (dict *SyncDict) clear() {
+func (dict *SyncDict) Clear() {
 	*dict = *MakeSyncDict() // 直接赋予一个新的 SyncDict，旧的让 go 自动 gc 即可
 }
