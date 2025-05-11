@@ -15,6 +15,12 @@ type Connection struct {
 	selectedDB   int        // 指示用户正在操作哪一个 DB
 }
 
+func NewConn(conn net.Conn) *Connection {
+	return &Connection{
+		conn: conn,
+	}
+}
+
 func (c *Connection) RemoteAddr() net.Addr {
 	return c.conn.RemoteAddr()
 }
