@@ -25,7 +25,7 @@ type RespHandler struct {
 	closing    atomic.Boolean        // 标识是否正在关闭中
 }
 
-func (r *RespHandler) MakeHandler() *RespHandler {
+func MakeHandler() *RespHandler {
 	var db databaseface.Database
 	db = database.NewEchoDatabase()
 	return &RespHandler{
