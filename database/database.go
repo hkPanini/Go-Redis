@@ -13,7 +13,6 @@ import (
 
 type Database struct {
 	dbSet []*DB // 子数据库，默认16个，通过参数 Databases，于 redis.conf 中进行修改
-
 }
 
 func NewDatabase() *Database {
@@ -52,13 +51,9 @@ func (database *Database) Exec(client resp.Connection, args [][]byte) resp.Reply
 	return db.Exec(client, args)
 }
 
-func (database *Database) Close() {
+func (database *Database) Close() {}
 
-}
-
-func (database *Database) AfterClientClose(c resp.Connection) {
-
-}
+func (database *Database) AfterClientClose(c resp.Connection) {}
 
 // 用户选择子db
 func execSelect(c resp.Connection, database *Database, args [][]byte) resp.Reply {
