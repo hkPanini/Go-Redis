@@ -1,6 +1,7 @@
 package database
 
 import (
+	"go-redis/aof"
 	"go-redis/config"
 	"go-redis/interface/resp"
 	"go-redis/lib/logger"
@@ -12,7 +13,8 @@ import (
 // redis 数据库， 下辖多个子数据库 db
 
 type Database struct {
-	dbSet []*DB // 子数据库，默认16个，通过参数 Databases，于 redis.conf 中进行修改
+	dbSet      []*DB // 子数据库，默认16个，通过参数 Databases，于 redis.conf 中进行修改
+	aofHandler *aof.AofHandler
 }
 
 func NewDatabase() *Database {
@@ -21,10 +23,19 @@ func NewDatabase() *Database {
 		config.Properties.Databases = 16
 	}
 	database.dbSet = make([]*DB, config.Properties.Databases)
-	for i := range database.dbSet { // 初始化 db
+	// 初始化 db
+	for i := range database.dbSet {
 		db := MakeDB()
 		db.index = i
 		database.dbSet[i] = db
+	}
+	// 初始化 aof
+	if config.Properties.AppendOnly {
+		aofHandler, err := aof.NewAofHandler(database)
+		if err != nil {
+			panic(err)
+		}
+		database.aofHandler = aofHandler
 	}
 	return database
 }
