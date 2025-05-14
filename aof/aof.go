@@ -84,7 +84,8 @@ func (handler *AofHandler) handleAof() {
 	}
 }
 
-// LoadAof
+// LoadAof 用于系统重启时，重放 aof 文件中的指令
+
 func (handler *AofHandler) LoadAof() {
 
 }

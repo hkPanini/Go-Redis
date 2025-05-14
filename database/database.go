@@ -40,8 +40,16 @@ func NewDatabase() *Database {
 			// 定义每个子数据库的 addAof 方法，
 			// addAof 和 AddAof 不是同一个方法，而是子数据库db层的addAof去调用Database层的AddAof
 			// 实现子数据库db往aof管道中写入指令
-			db.addAof = func(line CmdLine) {
-				database.aofHandler.AddAof(db.index, CmdLine{})
+
+			// 注意闭包引发的bug
+			// 创建局部变量，固定当前迭代的 db,防止直接引用 db 造成内存逃逸
+			// 当循环结束后，所有闭包中的 db 都指向最后一次迭代的db（即第 16 个数据库，索引为 15）。因此调用时所有闭包都会使用索引15
+			//建一个中间变量 currentDB
+			currentDB := db
+			currentDB.addAof = func(line CmdLine) {
+				// AddAof(db.index, line) 中的 db 引用了外部 for 中的 db 造成内存逃逸，for 中的 db 变量逃逸到堆上
+				// database.aofHandler.AddAof(db.index, line)
+				database.aofHandler.AddAof(currentDB.index, line)
 			}
 		}
 	}
