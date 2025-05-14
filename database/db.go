@@ -20,7 +20,8 @@ type CmdLine = [][]byte
 
 func MakeDB() *DB {
 	db := &DB{
-		data: dict.MakeSyncDict(),
+		data:   dict.MakeSyncDict(),
+		addAof: func(line CmdLine) {},
 	}
 	return db
 }
