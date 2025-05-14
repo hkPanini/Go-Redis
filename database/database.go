@@ -36,6 +36,14 @@ func NewDatabase() *Database {
 			panic(err)
 		}
 		database.aofHandler = aofHandler
+		for _, db := range database.dbSet {
+			// 定义每个子数据库的 addAof 方法，
+			// addAof 和 AddAof 不是同一个方法，而是子数据库db层的addAof去调用Database层的AddAof
+			// 实现子数据库db往aof管道中写入指令
+			db.addAof = func(line CmdLine) {
+				database.aofHandler.AddAof(db.index, CmdLine{})
+			}
+		}
 	}
 	return database
 }
