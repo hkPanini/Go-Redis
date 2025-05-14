@@ -9,8 +9,9 @@ import (
 )
 
 type DB struct {
-	index int
-	data  dict.Dict
+	index  int
+	data   dict.Dict
+	addAof func(line CmdLine)
 }
 
 type ExecFunc func(db *DB, args [][]byte) resp.Reply // redis 所有指令的函数规范，入参是 db 和指令，出参是 reply
