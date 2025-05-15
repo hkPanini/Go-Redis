@@ -57,7 +57,7 @@ func (r *SyntaxErrReply) Error() string {
 // WrongTypeErrReply 表示对持有错误类型值的键执行操作，指操作的数据类型与命令不匹配（例如对字符串执行 HGET）
 type WrongTypeErrReply struct{}
 
-var wrongTypeErrBytes = []byte("-WRONGTYPE Operation against a key holding the wrong kind of value\r\n")
+var wrongTypeErrBytes = []byte("-WRONG TYPE Operation against a key holding the wrong kind of value\r\n")
 
 // ToBytes marshals redis.Reply
 func (r *WrongTypeErrReply) ToBytes() []byte {
@@ -65,7 +65,7 @@ func (r *WrongTypeErrReply) ToBytes() []byte {
 }
 
 func (r *WrongTypeErrReply) Error() string {
-	return "WRONGTYPE Operation against a key holding the wrong kind of value"
+	return "WRONG TYPE Operation against a key holding the wrong kind of value"
 }
 
 // ProtocolErrReply 表示请求数据不符合 RESP 格式规范
