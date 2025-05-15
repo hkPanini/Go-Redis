@@ -17,7 +17,7 @@ type StandaloneDatabase struct {
 	aofHandler *aof.AofHandler
 }
 
-func NewDatabase() *StandaloneDatabase {
+func NewStandaloneDatabase() *StandaloneDatabase {
 	database := &StandaloneDatabase{}
 	if config.Properties.Databases == 0 {
 		config.Properties.Databases = 16
