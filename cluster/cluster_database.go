@@ -42,7 +42,7 @@ func MakeClusterDatabase() *ClusterDatabase {
 	// 初始化连接池 peerConnection
 	ctx := context.Background()
 	for _, peer := range config.Properties.Peers {
-		pool.NewObjectPoolWithDefaultConfig( // 使用默认配置创建连接池，每个其他节点对应一个连接池，存储在 peerConnection 映射中
+		cluster.peerConnection[peer] = pool.NewObjectPoolWithDefaultConfig( // 使用默认配置创建连接池，每个其他节点对应一个连接池，存储在 peerConnection 映射中
 			ctx,
 			&connectionFactory{Peer: peer})
 	}
