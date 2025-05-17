@@ -63,7 +63,7 @@ func (cluster *ClusterDatabase) Exec(client resp.Connection, args [][]byte) (res
 	cmdName := strings.ToLower(string(args[0])) // 拿到指令名称
 	cmdFunc, ok := router[cmdName]
 	if !ok {
-		reply.MakeErrReply("not supported cmd")
+		return reply.MakeErrReply("not supported cmd")
 	}
 	result = cmdFunc(cluster, client, args)
 	return
