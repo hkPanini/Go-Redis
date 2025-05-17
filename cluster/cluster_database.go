@@ -8,6 +8,9 @@ import (
 	"go-redis/interface/database"
 	"go-redis/interface/resp"
 	"go-redis/lib/consistenthash"
+	"go-redis/lib/logger"
+	"go-redis/resp/reply"
+	"strings"
 )
 
 type ClusterDatabase struct {
@@ -50,17 +53,26 @@ type CmdFunc func(cluster *ClusterDatabase, c resp.Connection, cmdArgs [][]byte)
 
 var router = makeRouter()
 
-func (c *ClusterDatabase) Exec(client resp.Connection, args [][]byte) resp.Reply {
-	//TODO implement me
-	panic("implement me")
+func (cluster *ClusterDatabase) Exec(client resp.Connection, args [][]byte) (result resp.Reply) {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Error(err)
+			result = &reply.UnknownErrReply{}
+		}
+	}()
+	cmdName := strings.ToLower(string(args[0])) // 拿到指令名称
+	cmdFunc, ok := router[cmdName]
+	if !ok {
+		reply.MakeErrReply("not supported cmd")
+	}
+	result = cmdFunc(cluster, client, args)
+	return
 }
 
-func (c *ClusterDatabase) Close() {
-	//TODO implement me
-	panic("implement me")
+func (cluster *ClusterDatabase) Close() {
+	cluster.db.Close()
 }
 
-func (c *ClusterDatabase) AfterClientClose(f resp.Connection) {
-	//TODO implement me
-	panic("implement me")
+func (cluster *ClusterDatabase) AfterClientClose(c resp.Connection) {
+	cluster.db.AfterClientClose(c)
 }
